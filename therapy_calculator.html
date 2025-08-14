@@ -1,0 +1,192 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Authorization Units Calculator</title>
+    <link rel="icon" type="image/png" href="https://img.icons8.com/ios-filled/32/calculator.png">
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background-color: #f4f6f8;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 600px;
+            background-color: #fff;
+            margin: auto;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        h2 {
+            text-align: center;
+            color: #333;
+        }
+        label {
+            display: block;
+            margin-top: 15px;
+            font-weight: bold;
+        }
+        input, select, button {
+            width: 100%;
+            padding: 10px;
+            margin-top: 5px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            box-sizing: border-box;
+        }
+        input.invalid, select.invalid {
+            border-color: red;
+        }
+        button {
+            background-color: #0078D7;
+            color: white;
+            border: none;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+        button:hover {
+            background-color: #005fa3;
+        }
+        .results {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #e9f5ff;
+            border-left: 5px solid #0078D7;
+            display: none;
+        }
+        .mode-switch {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .mode-switch button {
+            width: auto;
+            margin: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Authorization Units Calculator</h2>
+        <div class="mode-switch">
+            <button onclick="switchMode('poc')">Units from POC Date Range</button>
+            <button onclick="switchMode('units')">Visits from Units</button>
+        </div>
+
+        <div id="poc_mode">
+            <label for="start_date">Start Date (MMDDYY):</label>
+            <input type="text" id="start_date">
+
+            <label for="end_date">End Date (MMDDYY):</label>
+            <input type="text" id="end_date">
+
+            <label for="visits_per_week">Visits per Week (0-5):</label>
+            <input type="number" id="visits_per_week" min="0" max="5" step="1">
+
+            <label for="duration">Duration per Visit (minutes):</label>
+            <select id="duration">
+                <option value="">Select</option>
+                <option value="30">30</option>
+                <option value="45">45</option>
+                <option value="60">60</option>
+            </select>
+
+            <button onclick="calculatePOC()">Calculate</button>
+
+            <div class="results" id="poc_results">
+                <p id="weeks_result"></p>
+                <p id="units_result"></p>
+                <p id="visits_result"></p>
+            </div>
+        </div>
+
+        <div id="units_mode" style="display:none;">
+            <label for="units_given">Number of Units Given:</label>
+            <input type="number" id="units_given">
+
+            <label for="duration_units">Duration per Visit (minutes):</label>
+            <select id="duration_units">
+                <option value="">Select</option>
+                <option value="30">30</option>
+                <option value="45">45</option>
+                <option value="60">60</option>
+            </select>
+
+            <button onclick="calculateVisits()">Calculate</button>
+
+            <div class="results" id="units_results">
+                <p id="visits_from_units_result"></p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function switchMode(mode) {
+            document.getElementById("poc_mode").style.display = mode === "poc" ? "block" : "none";
+            document.getElementById("units_mode").style.display = mode === "units" ? "block" : "none";
+            document.getElementById("poc_results").style.display = "none";
+            document.getElementById("units_results").style.display = "none";
+        }
+
+        function validateField(id) {
+            const field = document.getElementById(id);
+            if (!field.value) {
+                field.classList.add("invalid");
+                return false;
+            } else {
+                field.classList.remove("invalid");
+                return true;
+            }
+        }
+
+        function calculatePOC() {
+            const fields = ["start_date", "end_date", "visits_per_week", "duration"];
+            let valid = true;
+            fields.forEach(id => {
+                if (!validateField(id)) valid = false;
+            });
+            if (!valid) {
+                alert("Please fill in all fields.");
+                return;
+            }
+
+            const start = document.getElementById("start_date").value;
+            const end = document.getElementById("end_date").value;
+            const visitsPerWeek = parseInt(document.getElementById("visits_per_week").value);
+            const duration = parseInt(document.getElementById("duration").value);
+
+            const startDate = new Date(`20${start.slice(4,6)}`, start.slice(0,2)-1, start.slice(2,4));
+            const endDate = new Date(`20${end.slice(4,6)}`, end.slice(0,2)-1, end.slice(2,4));
+            const weeks = Math.round(Math.abs((endDate - startDate) / (1000 * 60 * 60 * 24 * 7)));
+            const totalVisits = Math.round(visitsPerWeek * weeks);
+            const totalUnits = Math.round(visitsPerWeek * (duration / 15) * weeks);
+
+            document.getElementById("weeks_result").textContent = `Total weeks: ${weeks}`;
+            document.getElementById("units_result").textContent = `Total units: ${totalUnits}`;
+            document.getElementById("visits_result").textContent = `Total visits: ${totalVisits}`;
+            document.getElementById("poc_results").style.display = "block";
+        }
+
+        function calculateVisits() {
+            const fields = ["units_given", "duration_units"];
+            let valid = true;
+            fields.forEach(id => {
+                if (!validateField(id)) valid = false;
+            });
+            if (!valid) {
+                alert("Please fill in all fields.");
+                return;
+            }
+
+            const units = parseFloat(document.getElementById("units_given").value);
+            const duration = parseFloat(document.getElementById("duration_units").value);
+            const visits = Math.round(units / (duration / 15));
+
+            document.getElementById("visits_from_units_result").textContent = `Total visits: ${visits}`;
+            document.getElementById("units_results").style.display = "block";
+        }
+    </script>
+</body>
+</html>
