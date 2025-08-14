@@ -3,31 +3,30 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Authorization Units Calculator</title>
+    <title>Authorizations Units Calculator</title>
     <link rel="icon" type="image/png" href="https://img.icons8.com/ios-filled/32/calculator.png">
     <style>
         body {
-            font-family: 'Segoe UI', sans-serif;
-            background-color: #f4f6f8;
+            font-family: Arial, sans-serif;
             margin: 0;
-            padding: 20px;
+            padding-bottom: 60px;
+            background-color: #f4f6f8;
         }
         .container {
             max-width: 600px;
-            background-color: #fff;
-            margin: auto;
+            margin: 40px auto;
+            background: #fff;
             padding: 30px;
             border-radius: 10px;
             box-shadow: 0 0 10px rgba(0,0,0,0.1);
         }
         h2 {
             text-align: center;
-            color: #333;
+            margin-bottom: 20px;
         }
         label {
             display: block;
             margin-top: 15px;
-            font-weight: bold;
         }
         input, select, button {
             width: 100%;
@@ -35,27 +34,26 @@
             margin-top: 5px;
             border-radius: 5px;
             border: 1px solid #ccc;
-            box-sizing: border-box;
         }
         input.invalid, select.invalid {
             border-color: red;
         }
         button {
-            background-color: #0078D7;
+            background-color: #007bff;
             color: white;
             border: none;
-            cursor: pointer;
             margin-top: 20px;
+            cursor: pointer;
         }
         button:hover {
-            background-color: #005fa3;
+            background-color: #0056b3;
         }
         .results {
             margin-top: 20px;
-            padding: 15px;
-            background-color: #e9f5ff;
-            border-left: 5px solid #0078D7;
             display: none;
+            background: #e9f5ff;
+            padding: 15px;
+            border-radius: 5px;
         }
         .mode-switch {
             text-align: center;
@@ -65,11 +63,25 @@
             width: auto;
             margin: 5px;
         }
+
+        footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background-color: #f8f9fa;
+            color: #333;
+            text-align: center;
+            padding: 10px 0;
+            font-size: 14px;
+            font-family: Arial, sans-serif;
+            border-top: 1px solid #ddd;
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h2>Authorization Units Calculator</h2>
+        <h2>Authorizations Units Calculator</h2>
         <div class="mode-switch">
             <button onclick="switchMode('poc')">Units from POC Date Range</button>
             <button onclick="switchMode('units')">Visits from Units</button>
@@ -122,6 +134,8 @@
         </div>
     </div>
 
+    <footer>Created by Luis R.</footer>
+
     <script>
         function switchMode(mode) {
             document.getElementById("poc_mode").style.display = mode === "poc" ? "block" : "none";
@@ -130,24 +144,23 @@
             document.getElementById("units_results").style.display = "none";
         }
 
-        function validateField(id) {
-            const field = document.getElementById(id);
-            if (!field.value) {
-                field.classList.add("invalid");
-                return false;
-            } else {
-                field.classList.remove("invalid");
-                return true;
-            }
+        function validatePOCInputs() {
+            let valid = true;
+            const fields = ["start_date", "end_date", "visits_per_week", "duration"];
+            fields.forEach(id => {
+                const el = document.getElementById(id);
+                if (!el.value) {
+                    el.classList.add("invalid");
+                    valid = false;
+                } else {
+                    el.classList.remove("invalid");
+                }
+            });
+            return valid;
         }
 
         function calculatePOC() {
-            const fields = ["start_date", "end_date", "visits_per_week", "duration"];
-            let valid = true;
-            fields.forEach(id => {
-                if (!validateField(id)) valid = false;
-            });
-            if (!valid) {
+            if (!validatePOCInputs()) {
                 alert("Please fill in all fields.");
                 return;
             }
@@ -157,8 +170,8 @@
             const visitsPerWeek = parseInt(document.getElementById("visits_per_week").value);
             const duration = parseInt(document.getElementById("duration").value);
 
-            const startDate = new Date(`20${start.slice(4,6)}`, start.slice(0,2)-1, start.slice(2,4));
-            const endDate = new Date(`20${end.slice(4,6)}`, end.slice(0,2)-1, end.slice(2,4));
+            const startDate = parseDate(start);
+            const endDate = parseDate(end);
             const weeks = Math.round(Math.abs((endDate - startDate) / (1000 * 60 * 60 * 24 * 7)));
             const totalVisits = Math.round(visitsPerWeek * weeks);
             const totalUnits = Math.round(visitsPerWeek * (duration / 15) * weeks);
@@ -169,13 +182,23 @@
             document.getElementById("poc_results").style.display = "block";
         }
 
-        function calculateVisits() {
-            const fields = ["units_given", "duration_units"];
+        function validateUnitsInputs() {
             let valid = true;
+            const fields = ["units_given", "duration_units"];
             fields.forEach(id => {
-                if (!validateField(id)) valid = false;
+                const el = document.getElementById(id);
+                if (!el.value) {
+                    el.classList.add("invalid");
+                    valid = false;
+                } else {
+                    el.classList.remove("invalid");
+                }
             });
-            if (!valid) {
+            return valid;
+        }
+
+        function calculateVisits() {
+            if (!validateUnitsInputs()) {
                 alert("Please fill in all fields.");
                 return;
             }
@@ -186,6 +209,13 @@
 
             document.getElementById("visits_from_units_result").textContent = `Total visits: ${visits}`;
             document.getElementById("units_results").style.display = "block";
+        }
+
+        function parseDate(str) {
+            const month = str.substring(0,2);
+            const day = str.substring(2,4);
+            const year = str.substring(4,6);
+            return new Date(`20${year}-${month}-${day}`);
         }
     </script>
 </body>
