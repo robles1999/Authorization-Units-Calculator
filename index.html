@@ -1,11 +1,11 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Authorization Units Calculator</title>
+    <title>Authorizations Units Calculator</title>
     <link rel="icon" type="image/png" href="https://img.icons8.com/ios-filled/32/calculator.png">
     <style>
+        /* Created by Luis R. */
         body {
             font-family: Arial, sans-serif;
             margin: 0;
@@ -37,6 +37,13 @@
         }
         input.invalid, select.invalid {
             border-color: red;
+            background: #fff5f5;
+        }
+        .err {
+            color: #c62828;
+            font-size: 0.85rem;
+            margin-top: 4px;
+            min-height: 1em; /* reserve space so layout doesn't jump */
         }
         button {
             background-color: #007bff;
@@ -81,7 +88,7 @@
 </head>
 <body>
     <div class="container">
-        <h2>Authorization Units Calculator</h2>
+        <h2>Authorizations Units Calculator</h2>
         <div class="mode-switch">
             <button onclick="switchMode('poc')">Units from POC Date Range</button>
             <button onclick="switchMode('units')">Visits from Units</button>
@@ -89,12 +96,14 @@
 
         <div id="poc_mode">
             <label for="start_date">Start Date (MMDDYY):</label>
-            <input type="text" id="start_date">
+            <input type="text" id="start_date" inputmode="numeric" autocomplete="off" placeholder="MMDDYY">
+            <div class="err" id="start_date_err" aria-live="polite"></div>
 
             <label for="end_date">End Date (MMDDYY):</label>
-            <input type="text" id="end_date">
+            <input type="text" id="end_date" inputmode="numeric" autocomplete="off" placeholder="MMDDYY">
+            <div class="err" id="end_date_err" aria-live="polite"></div>
 
-            <label for="visits_per_week">Visits per Week:</label>
+            <label for="visits_per_week">Visits per Week (0-5):</label>
             <input type="number" id="visits_per_week" min="0" max="5" step="1">
 
             <label for="duration">Duration per Visit (minutes):</label>
@@ -137,6 +146,130 @@
     <footer>Created by Luis R.</footer>
 
     <script>
+        /* ============================
+           Date helpers (MMDDYY)
+           Created by Luis R.
+           ============================ */
+
+        function monthName(m) {
+            const names = [null,'January','February','March','April','May','June','July','August','September','October','November','December'];
+            return names[m] || '';
+        }
+
+        // Formats "MMDDYY" digits into "MM/DD/YY" as you type
+        function formatWithSlashes(digits) {
+            const v = digits.replace(/\D/g, '').slice(0, 6);
+            if (v.length <= 2) return v;
+            if (v.length <= 4) return v.slice(0,2) + '/' + v.slice(2);
+            return v.slice(0,2) + '/' + v.slice(2,4) + '/' + v.slice(4);
+        }
+
+        // Convert 2-digit year to full year using a pivot (00–49 => 2000–2049; 50–99 => 1950–1999)
+        function toFullYear(yy) {
+            return yy <= 49 ? 2000 + yy : 1900 + yy;
+        }
+
+        function isLeap(year) {
+            return (year % 4 === 0 && year % 100 !== 0) || (year % 400 === 0);
+        }
+
+        // Parse "MMDDYY" (digits only). Returns {m,d,yy,fullYear} or null if not 6 digits.
+        function parseMMDDYY(digits) {
+            const v = digits.replace(/\D/g, '');
+            if (v.length !== 6) return null;
+            const m = Number(v.slice(0,2));
+            const d = Number(v.slice(2,4));
+            const yy = Number(v.slice(4,6));
+            return { m, d, yy, fullYear: toFullYear(yy) };
+        }
+
+        function daysInMonth(year, month1to12) {
+            return new Date(year, month1to12, 0).getDate();
+        }
+
+        // Detailed validation with messages:
+        // - Only mention the YEAR when it's Feb 29 in a non-leap year.
+        // - All other month/day issues omit the year (e.g., "September doesn't have 31 days.")
+        function validateMMDDYY(input) {
+            const v = input.replace(/\D/g, '');
+            if (v.length !== 6) {
+                return { ok: false, message: 'Please enter 6 digits in MMDDYY format (e.g., 081825).' };
+            }
+            const p = parseMMDDYY(v);
+            const { m, d, fullYear } = p;
+
+            if (m < 1 || m > 12) {
+                return { ok: false, message: 'Month must be 01–12.' };
+            }
+            const maxDay = daysInMonth(fullYear, m);
+            if (d < 1) {
+                return { ok: false, message: 'Day must be 01–' + String(maxDay).padStart(2,'0') + '.' };
+            }
+            if (d > maxDay) {
+                if (m === 2 && d === 29 && !isLeap(fullYear)) {
+                    // Only here we include the year in the message
+                    return { ok: false, message: 'February 29 is only valid in leap years; ' + fullYear + ' is not a leap year.' };
+                }
+                // All other cases: month name only, no year
+                return { ok: false, message: monthName(m) + " doesn't have " + d + ' days.' };
+            }
+            return { ok: true, message: '' };
+        }
+
+        // Converts "MMDDYY" or "MM/DD/YY" to a Date; returns null if invalid
+        function toDate(input) {
+            const v = input.replace(/\D/g, '');
+            const res = validateMMDDYY(v);
+            if (!res.ok) return null;
+            const { m, d, fullYear } = parseMMDDYY(v);
+            return new Date(fullYear, m - 1, d);
+        }
+
+        function showError(inputId, message) {
+            const el = document.getElementById(inputId);
+            const err = document.getElementById(inputId + "_err");
+            if (el) el.classList.add("invalid");
+            if (err) err.textContent = message || "";
+        }
+
+        function clearError(inputId) {
+            const el = document.getElementById(inputId);
+            const err = document.getElementById(inputId + "_err");
+            if (el) el.classList.remove("invalid");
+            if (err) err.textContent = "";
+        }
+
+        // Attach date masking + validation to inputs by id
+        function attachDateMask(inputId) {
+            const input = document.getElementById(inputId);
+            if (!input) return;
+
+            input.addEventListener('input', () => {
+                const digits = input.value.replace(/\D/g, '').slice(0, 6);
+                input.value = formatWithSlashes(digits);
+                clearError(inputId);
+            });
+
+            input.addEventListener('blur', () => {
+                const digits = input.value.replace(/\D/g, '');
+                if (digits.length === 0) {
+                    clearError(inputId);
+                    return;
+                }
+                const res = validateMMDDYY(digits);
+                if (!res.ok) {
+                    showError(inputId, res.message);
+                } else {
+                    input.value = formatWithSlashes(digits);
+                    clearError(inputId);
+                }
+            });
+        }
+
+        /* ============================
+           Existing app logic + updates
+           ============================ */
+
         function switchMode(mode) {
             document.getElementById("poc_mode").style.display = mode === "poc" ? "block" : "none";
             document.getElementById("units_mode").style.display = mode === "units" ? "block" : "none";
@@ -146,33 +279,83 @@
 
         function validatePOCInputs() {
             let valid = true;
-            const fields = ["start_date", "end_date", "visits_per_week", "duration"];
-            fields.forEach(id => {
+
+            // Required checks
+            const requiredFields = ["start_date", "end_date", "visits_per_week", "duration"];
+            requiredFields.forEach(id => {
                 const el = document.getElementById(id);
                 if (!el.value) {
-                    el.classList.add("invalid");
+                    if (id === "start_date" || id === "end_date") {
+                        showError(id, "This field is required.");
+                    } else {
+                        el.classList.add("invalid");
+                    }
                     valid = false;
                 } else {
-                    el.classList.remove("invalid");
+                    if (id === "start_date" || id === "end_date") {
+                        clearError(id);
+                    } else {
+                        el.classList.remove("invalid");
+                    }
                 }
             });
+
+            // Date validity checks with detailed messages
+            ["start_date", "end_date"].forEach(id => {
+                const val = document.getElementById(id).value;
+                const digits = val.replace(/\D/g, '');
+                if (digits.length > 0) {
+                    const res = validateMMDDYY(digits);
+                    if (!res.ok) {
+                        showError(id, res.message);
+                        valid = false;
+                    }
+                }
+            });
+
+            // Visits per week range check (0–5)
+            const vpwEl = document.getElementById("visits_per_week");
+            if (vpwEl.value) {
+                const n = Number(vpwEl.value);
+                if (isNaN(n) || n < 0 || n > 5) {
+                    vpwEl.classList.add("invalid");
+                    alert("Visits per Week must be between 0 and 5.");
+                    valid = false;
+                }
+            }
+
+            // Ensure start <= end when both valid
+            const startDate = toDate(document.getElementById("start_date").value);
+            const endDate   = toDate(document.getElementById("end_date").value);
+            if (startDate && endDate && endDate < startDate) {
+                showError("end_date", "End Date must be on or after Start Date.");
+                valid = false;
+            }
+
             return valid;
         }
 
         function calculatePOC() {
             if (!validatePOCInputs()) {
-                alert("Please fill in all fields.");
+                alert("Please correct the highlighted fields.");
                 return;
             }
 
             const start = document.getElementById("start_date").value;
             const end = document.getElementById("end_date").value;
-            const visitsPerWeek = parseInt(document.getElementById("visits_per_week").value);
-            const duration = parseInt(document.getElementById("duration").value);
+            const visitsPerWeek = parseInt(document.getElementById("visits_per_week").value, 10);
+            const duration = parseInt(document.getElementById("duration").value, 10);
 
-            const startDate = parseDate(start);
-            const endDate = parseDate(end);
-            const weeks = Math.round(Math.abs((endDate - startDate) / (1000 * 60 * 60 * 24 * 7)));
+            const startDate = toDate(start);
+            const endDate = toDate(end);
+
+            if (!startDate || !endDate) {
+                alert("Enter valid dates in MMDDYY format.");
+                return;
+            }
+
+            const msPerWeek = 1000 * 60 * 60 * 24 * 7;
+            const weeks = Math.round(Math.abs((endDate - startDate) / msPerWeek));
             const totalVisits = Math.round(visitsPerWeek * weeks);
             const totalUnits = Math.round(visitsPerWeek * (duration / 15) * weeks);
 
@@ -211,12 +394,11 @@
             document.getElementById("units_results").style.display = "block";
         }
 
-        function parseDate(str) {
-            const month = str.substring(0,2);
-            const day = str.substring(2,4);
-            const year = str.substring(4,6);
-            return new Date(`20${year}-${month}-${day}`);
-        }
+        // Initialize date masks on load
+        document.addEventListener('DOMContentLoaded', () => {
+            attachDateMask('start_date');
+            attachDateMask('end_date');
+        });
     </script>
 </body>
 </html>
