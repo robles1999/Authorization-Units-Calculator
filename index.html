@@ -1,404 +1,461 @@
 <!DOCTYPE html>
+
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Authorizations Units Calculator</title>
-    <link rel="icon" type="image/png" href="https://img.icons8.com/ios-filled/32/calculator.png">
-    <style>
-        /* Created by Luis R. */
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding-bottom: 60px;
-            background-color: #f4f6f8;
-        }
-        .container {
-            max-width: 600px;
-            margin: 40px auto;
-            background: #fff;
-            padding: 30px;
-            border-radius: 10px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
-        }
-        h2 {
-            text-align: center;
-            margin-bottom: 20px;
-        }
-        label {
-            display: block;
-            margin-top: 15px;
-        }
-        input, select, button {
-            width: 100%;
-            padding: 10px;
-            margin-top: 5px;
-            border-radius: 5px;
-            border: 1px solid #ccc;
-        }
-        input.invalid, select.invalid {
-            border-color: red;
-            background: #fff5f5;
-        }
-        .err {
-            color: #c62828;
-            font-size: 0.85rem;
-            margin-top: 4px;
-            min-height: 1em; /* reserve space so layout doesn't jump */
-        }
-        button {
-            background-color: #007bff;
-            color: white;
-            border: none;
-            margin-top: 20px;
-            cursor: pointer;
-        }
-        button:hover {
-            background-color: #0056b3;
-        }
-        .results {
-            margin-top: 20px;
-            display: none;
-            background: #e9f5ff;
-            padding: 15px;
-            border-radius: 5px;
-        }
-        .mode-switch {
-            text-align: center;
-            margin-bottom: 20px;
-        }
-        .mode-switch button {
-            width: auto;
-            margin: 5px;
-        }
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1" name="viewport"/>
+<title>Authorizations Units Calculator</title>
+<link href="https://img.icons8.com/ios-filled/32/calculator.png" rel="icon" type="image/png"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<style>
+    /* =============================
+       Fancy & Modern UI — Created by Luis R.
+       ============================= */
+    :root {
+      --bg: #0f172a;               /* slate-900 */
+      --bg-elev: #111827;          /* gray-900 */
+      --card: #0b1220;             /* deeper card */
+      --soft: #1f2937;             /* gray-800 */
+      --text: #e5e7eb;             /* gray-200 */
+      --muted: #9ca3af;            /* gray-400 */
+      --primary: #6366f1;          /* indigo-500 */
+      --primary-600: #5457ee;      /* indigo-600 */
+      --ring: rgba(99, 102, 241, .45);
+      --success: #10b981;          /* emerald-500 */
+      --danger: #ef4444;           /* red-500 */
+      --warning: #f59e0b;          /* amber-500 */
+      --shadow-lg: 0 10px 30px rgba(0,0,0,.4);
+      --radius: 14px;
+      --radius-sm: 10px;
+    }
 
-        footer {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            background-color: #f8f9fa;
-            color: #333;
-            text-align: center;
-            padding: 10px 0;
-            font-size: 14px;
-            font-family: Arial, sans-serif;
-            border-top: 1px solid #ddd;
-        }
-    </style>
+    @media (prefers-color-scheme: light) {
+      :root {
+        --bg: #f5f7fb;
+        --bg-elev: #eef1f6;
+        --card: #ffffff;
+        --soft: #e9eef7;
+        --text: #0f172a;
+        --muted: #4b5563;
+        --primary: #4f46e5;
+        --primary-600: #4338ca;
+        --ring: rgba(79, 70, 229, .35);
+        --shadow-lg: 0 12px 24px rgba(2,6,23,.12);
+      }
+    }
+
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      font-family: 'Inter', system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, 'Apple Color Emoji', 'Segoe UI Emoji';
+      color: var(--text);
+      background: radial-gradient(1200px 800px at 10% -10%, rgba(99,102,241,.15), transparent 60%),
+                  radial-gradient(1200px 800px at 110% 10%, rgba(16,185,129,.12), transparent 60%),
+                  var(--bg);
+      padding-bottom: 72px;
+    }
+
+    .wrap {
+      max-width: 880px;
+      margin: 48px auto;
+      padding: 0 20px;
+    }
+
+    .card {
+      background: linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,0)) , var(--card);
+      border: 1px solid rgba(255,255,255,.06);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-lg);
+      overflow: hidden;
+    }
+
+    .app-header {
+      position: relative;
+      padding: 28px 28px 24px;
+      background:
+        radial-gradient(600px 200px at 0% 0%, rgba(99,102,241,.25), transparent 70%),
+        radial-gradient(600px 200px at 100% 0%, rgba(16,185,129,.20), transparent 70%),
+        linear-gradient(135deg, rgba(79,70,229,.15), rgba(16,185,129,.10));
+      border-bottom: 1px solid rgba(255,255,255,.06);
+    }
+    .app-title {
+      display: flex; align-items: center; gap: 12px;
+      font-weight: 700; font-size: 22px;
+      letter-spacing: .2px;
+    }
+    .app-title svg { flex: none }
+    .app-sub { color: var(--muted); margin-top: 6px; font-size: 14px; }
+
+    .segmented {
+      display: inline-flex;
+      background: var(--soft);
+      border-radius: 999px;
+      padding: 4px;
+      gap: 6px; margin-top: 18px;
+      border: 1px solid rgba(255,255,255,.06);
+    }
+    .segmented button {
+      appearance: none; border: 0; cursor: pointer;
+      color: var(--text);
+      background: transparent;
+      padding: 10px 16px; border-radius: 999px;
+      font-weight: 600; font-size: 14px;
+      transition: all .18s ease;
+    }
+    .segmented button:hover { background: rgba(255,255,255,.06); }
+    .segmented button.active { background: var(--primary); color: white; box-shadow: 0 8px 18px var(--ring); }
+
+    .content { padding: 26px; display: grid; gap: 24px; }
+
+    .grid { display: grid; gap: 16px; }
+    @media (min-width: 720px) {
+      .grid.two { grid-template-columns: repeat(2,1fr); gap: 18px; }
+    }
+
+    label { font-weight: 600; font-size: 13px; color: var(--muted); }
+
+    .control { display: grid; gap: 8px; }
+
+    input[type="text"], input[type="number"], select {
+      width: 100%;
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
+      border: 1px solid rgba(148,163,184,.25);
+      border-radius: 12px;
+      color: var(--text);
+      padding: 12px 14px;
+      outline: none;
+      transition: border-color .2s ease, box-shadow .2s ease, transform .04s ease;
+    }
+    input::placeholder { color: #9aa3b2; }
+    input:focus, select:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 4px var(--ring);
+    }
+    input.invalid, select.invalid {
+      border-color: var(--danger);
+      box-shadow: 0 0 0 4px rgba(239,68,68,.2);
+      background: linear-gradient(180deg, rgba(239,68,68,.06), rgba(239,68,68,.02));
+    }
+
+    .err { color: #fecaca; /* red-200 */ font-size: 12px; min-height: 16px; }
+
+    .actions { display: flex; gap: 12px; justify-content: center; }
+    .actions .btn { margin: 40px 0; }
+    .btn {
+      appearance: none; border: 0; cursor: pointer;
+      background: var(--primary);
+      color: white; font-weight: 700; letter-spacing: .2px;
+      padding: 12px 16px; border-radius: 12px;
+      box-shadow: 0 10px 18px var(--ring);
+      transition: transform .07s ease, filter .2s ease, box-shadow .2s ease;
+    }
+    .btn:hover { filter: brightness(1.05); box-shadow: 0 12px 22px var(--ring); }
+    .btn:active { transform: translateY(1px); }
+
+    .results {
+      display: none; border-top: 1px dashed rgba(255,255,255,.10); padding-top: 10px;
+      animation: fade .25s ease both;
+    }
+    @keyframes fade { from { opacity: 0; transform: translateY(4px) } to { opacity: 1; transform: translateY(0) } }
+
+    .stats { display: grid; gap: 12px; }
+    @media (min-width: 540px) { .stats { grid-template-columns: repeat(3, 1fr); } }
+
+    .stat {
+      background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,0));
+      border: 1px solid rgba(255,255,255,.06);
+      border-radius: var(--radius-sm);
+      padding: 14px 14px 12px; display: grid; gap: 6px;
+    }
+    .stat .label { color: var(--muted); font-size: 12px; font-weight: 600; }
+    .stat .value { font-size: 22px; font-weight: 800; letter-spacing: .2px; }
+
+    footer {
+      position: fixed; bottom: 0; left: 0; right: 0;
+      padding: 10px 16px; text-align: center; font-size: 13px; color: var(--muted);
+      background: linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,.06));
+      border-top: 1px solid rgba(255,255,255,.08);
+      backdrop-filter: blur(6px);
+    }
+
+    .hidden { display: none !important; }
+  </style>
 </head>
 <body>
-    <div class="container">
-        <h2>Authorizations Units Calculator</h2>
-        <div class="mode-switch">
-            <button onclick="switchMode('poc')">Units from POC Date Range</button>
-            <button onclick="switchMode('units')">Visits from Units</button>
+<div class="wrap">
+<div class="card">
+<header class="app-header">
+<div class="app-title">
+<svg fill="none" height="28" viewbox="0 0 24 24" width="28" xmlns="http://www.w3.org/2000/svg">
+<rect height="18" opacity=".85" rx="4" stroke="currentColor" stroke-width="1.5" width="18" x="3" y="3"></rect>
+<path d="M7 8h4M13 8h4M7 12h10M7 16h4M13 16h4" opacity=".85" stroke="currentColor" stroke-linecap="round" stroke-width="1.5"></path>
+</svg>
+          Authorizations Units Calculator
         </div>
+<div class="app-sub">Calculate authorized units and visits from a POC date range, with precise date validation and auto-formatting.</div>
+<div aria-label="Mode" class="segmented" role="tablist">
+<button aria-selected="true" class="active" id="tab-poc" onclick="switchMode('poc')" role="tab">Units from POC Date Range</button>
+<button aria-selected="false" id="tab-units" onclick="switchMode('units')" role="tab">Visits from Units</button>
+</div>
+</header>
+<section class="content">
+<!-- POC MODE -->
+<div id="poc_mode">
+<div class="grid two">
+<div class="control">
+<label for="start_date">Start Date <small>(MMDDYY)</small></label>
+<input autocomplete="off" id="start_date" inputmode="numeric" placeholder="MMDDYY" type="text"/>
+<div aria-live="polite" class="err" id="start_date_err"></div>
+</div>
+<div class="control">
+<label for="end_date">End Date <small>(MMDDYY)</small></label>
+<input autocomplete="off" id="end_date" inputmode="numeric" placeholder="MMDDYY" type="text"/>
+<div aria-live="polite" class="err" id="end_date_err"></div>
+</div>
+</div>
+<div class="grid two">
+<div class="control">
+<label for="visits_per_week">Visits per Week <small>(0–5)</small></label>
+<input id="visits_per_week" max="5" min="0" placeholder="e.g., 3" step="1" type="number"/>
+</div>
+<div class="control">
+<label for="duration">Duration per Visit (minutes)</label>
+<select id="duration">
+<option value="">Select</option>
+<option value="30">30</option>
+<option value="45">45</option>
+<option value="60">60</option>
+</select>
+</div>
+</div>
+<div class="actions">
+<button class="btn" onclick="calculatePOC()">Calculate</button>
+</div>
+<div class="results" id="poc_results">
+<div class="stats">
+<div class="stat"><div class="label">Total weeks</div><div class="value" id="weeks_result">—</div></div>
+<div class="stat"><div class="label">Total units</div><div class="value" id="units_result">—</div></div>
+<div class="stat"><div class="label">Total visits</div><div class="value" id="visits_result">—</div></div>
+</div>
+</div>
+</div>
+<!-- UNITS MODE -->
+<div class="hidden" id="units_mode">
+<div class="grid two">
+<div class="control">
+<label for="units_given">Number of Units Given</label>
+<input id="units_given" placeholder="e.g., 36" type="number"/>
+</div>
+<div class="control">
+<label for="duration_units">Duration per Visit (minutes)</label>
+<select id="duration_units">
+<option value="">Select</option>
+<option value="30">30</option>
+<option value="45">45</option>
+<option value="60">60</option>
+</select>
+</div>
+</div>
+<div class="actions">
+<button class="btn" onclick="calculateVisits()">Calculate</button>
+</div>
+<div class="results" id="units_results">
+<div class="stats">
+<div class="stat" style="grid-column: span 3; max-width: 340px;">
+<div class="label">Total visits</div>
+<div class="value" id="visits_from_units_result">—</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+</div>
+</div>
+<footer>Created by Luis R.</footer>
+<script>
+    /* ==================================
+       Logic & Validation (MMDDYY)
+       Created by Luis R.
+       ================================== */
 
-        <div id="poc_mode">
-            <label for="start_date">Start Date (MMDDYY):</label>
-            <input type="text" id="start_date" inputmode="numeric" autocomplete="off" placeholder="MMDDYY">
-            <div class="err" id="start_date_err" aria-live="polite"></div>
+    function monthName(m) {
+      const names = [null,'January','February','March','April','May','June','July','August','September','October','November','December'];
+      return names[m] || '';
+    }
 
-            <label for="end_date">End Date (MMDDYY):</label>
-            <input type="text" id="end_date" inputmode="numeric" autocomplete="off" placeholder="MMDDYY">
-            <div class="err" id="end_date_err" aria-live="polite"></div>
+    // Formats MMDDYY digits -> MM/DD/YY while typing
+    function formatWithSlashes(digits) {
+      const v = digits.replace(/\D/g, '').slice(0, 6);
+      if (v.length <= 2) return v;
+      if (v.length <= 4) return v.slice(0,2) + '/' + v.slice(2);
+      return v.slice(0,2) + '/' + v.slice(2,4) + '/' + v.slice(4);
+    }
 
-            <label for="visits_per_week">Visits per Week (0-5):</label>
-            <input type="number" id="visits_per_week" min="0" max="5" step="1">
+    function toFullYear(yy) { return yy <= 49 ? 2000 + yy : 1900 + yy; }
+    function isLeap(year) { return (year % 4 === 0 && year % 100 !== 0) || (year % 400 === 0); }
 
-            <label for="duration">Duration per Visit (minutes):</label>
-            <select id="duration">
-                <option value="">Select</option>
-                <option value="30">30</option>
-                <option value="45">45</option>
-                <option value="60">60</option>
-            </select>
+    function parseMMDDYY(digits) {
+      const v = digits.replace(/\D/g, '');
+      if (v.length !== 6) return null;
+      const m = Number(v.slice(0,2));
+      const d = Number(v.slice(2,4));
+      const yy = Number(v.slice(4,6));
+      return { m, d, yy, fullYear: toFullYear(yy) };
+    }
 
-            <button onclick="calculatePOC()">Calculate</button>
+    function daysInMonth(year, month1to12) { return new Date(year, month1to12, 0).getDate(); }
 
-            <div class="results" id="poc_results">
-                <p id="weeks_result"></p>
-                <p id="units_result"></p>
-                <p id="visits_result"></p>
-            </div>
-        </div>
-
-        <div id="units_mode" style="display:none;">
-            <label for="units_given">Number of Units Given:</label>
-            <input type="number" id="units_given">
-
-            <label for="duration_units">Duration per Visit (minutes):</label>
-            <select id="duration_units">
-                <option value="">Select</option>
-                <option value="30">30</option>
-                <option value="45">45</option>
-                <option value="60">60</option>
-            </select>
-
-            <button onclick="calculateVisits()">Calculate</button>
-
-            <div class="results" id="units_results">
-                <p id="visits_from_units_result"></p>
-            </div>
-        </div>
-    </div>
-
-    <footer>Created by Luis R.</footer>
-
-    <script>
-        /* ============================
-           Date helpers (MMDDYY)
-           Created by Luis R.
-           ============================ */
-
-        function monthName(m) {
-            const names = [null,'January','February','March','April','May','June','July','August','September','October','November','December'];
-            return names[m] || '';
+    // Only include YEAR in message for Feb 29 non-leap; otherwise no year
+    function validateMMDDYY(input) {
+      const v = input.replace(/\D/g, '');
+      if (v.length !== 6) {
+        return { ok: false, message: 'Please enter 6 digits in MMDDYY format (e.g., 081825).' };
+      }
+      const p = parseMMDDYY(v); const { m, d, fullYear } = p;
+      if (m < 1 || m > 12) return { ok: false, message: 'Month must be 01–12.' };
+      const maxDay = daysInMonth(fullYear, m);
+      if (d < 1) return { ok: false, message: 'Day must be 01–' + String(maxDay).padStart(2,'0') + '.' };
+      if (d > maxDay) {
+        if (m === 2 && d === 29 && !isLeap(fullYear)) {
+          return { ok: false, message: 'February 29 is only valid in leap years; ' + fullYear + ' is not a leap year.' };
         }
+        return { ok: false, message: monthName(m) + " doesn't have " + d + ' days.' };
+      }
+      return { ok: true, message: '' };
+    }
 
-        // Formats "MMDDYY" digits into "MM/DD/YY" as you type
-        function formatWithSlashes(digits) {
-            const v = digits.replace(/\D/g, '').slice(0, 6);
-            if (v.length <= 2) return v;
-            if (v.length <= 4) return v.slice(0,2) + '/' + v.slice(2);
-            return v.slice(0,2) + '/' + v.slice(2,4) + '/' + v.slice(4);
+    function toDate(input) {
+      const v = input.replace(/\D/g, '');
+      const res = validateMMDDYY(v);
+      if (!res.ok) return null;
+      const { m, d, fullYear } = parseMMDDYY(v);
+      return new Date(fullYear, m - 1, d);
+    }
+
+    function showError(inputId, message) {
+      const el = document.getElementById(inputId);
+      const err = document.getElementById(inputId + '_err');
+      if (el) el.classList.add('invalid');
+      if (err) err.textContent = message || '';
+    }
+    function clearError(inputId) {
+      const el = document.getElementById(inputId);
+      const err = document.getElementById(inputId + '_err');
+      if (el) el.classList.remove('invalid');
+      if (err) err.textContent = '';
+    }
+
+    function attachDateMask(inputId) {
+      const input = document.getElementById(inputId);
+      if (!input) return;
+      input.addEventListener('input', () => {
+        const digits = input.value.replace(/\D/g, '').slice(0, 6);
+        input.value = formatWithSlashes(digits);
+        clearError(inputId);
+      });
+      input.addEventListener('blur', () => {
+        const digits = input.value.replace(/\D/g, '');
+        if (digits.length === 0) { clearError(inputId); return; }
+        const res = validateMMDDYY(digits);
+        if (!res.ok) showError(inputId, res.message); else { input.value = formatWithSlashes(digits); clearError(inputId); }
+      });
+      // Allow Enter to trigger calculation depending on mode
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          if (!document.getElementById('poc_mode').classList.contains('hidden')) calculatePOC();
+          else calculateVisits();
         }
+      });
+    }
 
-        // Convert 2-digit year to full year using a pivot (00–49 => 2000–2049; 50–99 => 1950–1999)
-        function toFullYear(yy) {
-            return yy <= 49 ? 2000 + yy : 1900 + yy;
+    function switchMode(mode) {
+      const poc = document.getElementById('poc_mode');
+      const units = document.getElementById('units_mode');
+      const tabP = document.getElementById('tab-poc');
+      const tabU = document.getElementById('tab-units');
+      const showPoc = mode === 'poc';
+      poc.classList.toggle('hidden', !showPoc);
+      units.classList.toggle('hidden', showPoc);
+      tabP.classList.toggle('active', showPoc);
+      tabU.classList.toggle('active', !showPoc);
+      tabP.setAttribute('aria-selected', showPoc);
+      tabU.setAttribute('aria-selected', !showPoc);
+      // Hide results when switching
+      document.getElementById('poc_results').style.display = 'none';
+      document.getElementById('units_results').style.display = 'none';
+    }
+
+    function validatePOCInputs() {
+      let valid = true;
+      const required = ['start_date','end_date','visits_per_week','duration'];
+      required.forEach(id => {
+        const el = document.getElementById(id);
+        if (!el.value) {
+          if (id === 'start_date' || id === 'end_date') showError(id, 'This field is required.');
+          else el.classList.add('invalid');
+          valid = false;
+        } else {
+          if (id === 'start_date' || id === 'end_date') clearError(id); else el.classList.remove('invalid');
         }
+      });
 
-        function isLeap(year) {
-            return (year % 4 === 0 && year % 100 !== 0) || (year % 400 === 0);
-        }
+      ['start_date','end_date'].forEach(id => {
+        const digits = document.getElementById(id).value.replace(/\D/g, '');
+        if (digits.length > 0) { const res = validateMMDDYY(digits); if (!res.ok) { showError(id, res.message); valid = false; } }
+      });
 
-        // Parse "MMDDYY" (digits only). Returns {m,d,yy,fullYear} or null if not 6 digits.
-        function parseMMDDYY(digits) {
-            const v = digits.replace(/\D/g, '');
-            if (v.length !== 6) return null;
-            const m = Number(v.slice(0,2));
-            const d = Number(v.slice(2,4));
-            const yy = Number(v.slice(4,6));
-            return { m, d, yy, fullYear: toFullYear(yy) };
-        }
+      const vpwEl = document.getElementById('visits_per_week');
+      if (vpwEl.value) { const n = Number(vpwEl.value); if (isNaN(n) || n < 0 || n > 5) { vpwEl.classList.add('invalid'); valid = false; } }
 
-        function daysInMonth(year, month1to12) {
-            return new Date(year, month1to12, 0).getDate();
-        }
+      const sDate = toDate(document.getElementById('start_date').value);
+      const eDate = toDate(document.getElementById('end_date').value);
+      if (sDate && eDate && eDate < sDate) { showError('end_date', 'End Date must be on or after Start Date.'); valid = false; }
 
-        // Detailed validation with messages:
-        // - Only mention the YEAR when it's Feb 29 in a non-leap year.
-        // - All other month/day issues omit the year (e.g., "September doesn't have 31 days.")
-        function validateMMDDYY(input) {
-            const v = input.replace(/\D/g, '');
-            if (v.length !== 6) {
-                return { ok: false, message: 'Please enter 6 digits in MMDDYY format (e.g., 081825).' };
-            }
-            const p = parseMMDDYY(v);
-            const { m, d, fullYear } = p;
+      return valid;
+    }
 
-            if (m < 1 || m > 12) {
-                return { ok: false, message: 'Month must be 01–12.' };
-            }
-            const maxDay = daysInMonth(fullYear, m);
-            if (d < 1) {
-                return { ok: false, message: 'Day must be 01–' + String(maxDay).padStart(2,'0') + '.' };
-            }
-            if (d > maxDay) {
-                if (m === 2 && d === 29 && !isLeap(fullYear)) {
-                    // Only here we include the year in the message
-                    return { ok: false, message: 'February 29 is only valid in leap years; ' + fullYear + ' is not a leap year.' };
-                }
-                // All other cases: month name only, no year
-                return { ok: false, message: monthName(m) + " doesn't have " + d + ' days.' };
-            }
-            return { ok: true, message: '' };
-        }
+    function calculatePOC() {
+      if (!validatePOCInputs()) { alert('Please correct the highlighted fields.'); return; }
+      const visitsPerWeek = parseInt(document.getElementById('visits_per_week').value, 10);
+      const duration = parseInt(document.getElementById('duration').value, 10);
+      const startDate = toDate(document.getElementById('start_date').value);
+      const endDate = toDate(document.getElementById('end_date').value);
+      if (!startDate || !endDate) { alert('Enter valid dates in MMDDYY format.'); return; }
 
-        // Converts "MMDDYY" or "MM/DD/YY" to a Date; returns null if invalid
-        function toDate(input) {
-            const v = input.replace(/\D/g, '');
-            const res = validateMMDDYY(v);
-            if (!res.ok) return null;
-            const { m, d, fullYear } = parseMMDDYY(v);
-            return new Date(fullYear, m - 1, d);
-        }
+      const msPerWeek = 1000 * 60 * 60 * 24 * 7;
+      const weeks = Math.round(Math.abs((endDate - startDate) / msPerWeek));
+      const totalVisits = Math.round(visitsPerWeek * weeks);
+      const totalUnits = Math.round(visitsPerWeek * (duration / 15) * weeks);
 
-        function showError(inputId, message) {
-            const el = document.getElementById(inputId);
-            const err = document.getElementById(inputId + "_err");
-            if (el) el.classList.add("invalid");
-            if (err) err.textContent = message || "";
-        }
+      document.getElementById('weeks_result').textContent = weeks;
+      document.getElementById('units_result').textContent = totalUnits;
+      document.getElementById('visits_result').textContent = totalVisits;
+      document.getElementById('poc_results').style.display = 'block';
+    }
 
-        function clearError(inputId) {
-            const el = document.getElementById(inputId);
-            const err = document.getElementById(inputId + "_err");
-            if (el) el.classList.remove("invalid");
-            if (err) err.textContent = "";
-        }
+    function validateUnitsInputs() {
+      let valid = true; const fields = ['units_given','duration_units'];
+      fields.forEach(id => { const el = document.getElementById(id); if (!el.value) { el.classList.add('invalid'); valid = false; } else el.classList.remove('invalid'); });
+      return valid;
+    }
 
-        // Attach date masking + validation to inputs by id
-        function attachDateMask(inputId) {
-            const input = document.getElementById(inputId);
-            if (!input) return;
+    function calculateVisits() {
+      if (!validateUnitsInputs()) { alert('Please fill in all fields.'); return; }
+      const units = parseFloat(document.getElementById('units_given').value);
+      const duration = parseFloat(document.getElementById('duration_units').value);
+      const visits = Math.round(units / (duration / 15));
+      document.getElementById('visits_from_units_result').textContent = visits;
+      document.getElementById('units_results').style.display = 'block';
+    }
 
-            input.addEventListener('input', () => {
-                const digits = input.value.replace(/\D/g, '').slice(0, 6);
-                input.value = formatWithSlashes(digits);
-                clearError(inputId);
-            });
-
-            input.addEventListener('blur', () => {
-                const digits = input.value.replace(/\D/g, '');
-                if (digits.length === 0) {
-                    clearError(inputId);
-                    return;
-                }
-                const res = validateMMDDYY(digits);
-                if (!res.ok) {
-                    showError(inputId, res.message);
-                } else {
-                    input.value = formatWithSlashes(digits);
-                    clearError(inputId);
-                }
-            });
-        }
-
-        /* ============================
-           Existing app logic + updates
-           ============================ */
-
-        function switchMode(mode) {
-            document.getElementById("poc_mode").style.display = mode === "poc" ? "block" : "none";
-            document.getElementById("units_mode").style.display = mode === "units" ? "block" : "none";
-            document.getElementById("poc_results").style.display = "none";
-            document.getElementById("units_results").style.display = "none";
-        }
-
-        function validatePOCInputs() {
-            let valid = true;
-
-            // Required checks
-            const requiredFields = ["start_date", "end_date", "visits_per_week", "duration"];
-            requiredFields.forEach(id => {
-                const el = document.getElementById(id);
-                if (!el.value) {
-                    if (id === "start_date" || id === "end_date") {
-                        showError(id, "This field is required.");
-                    } else {
-                        el.classList.add("invalid");
-                    }
-                    valid = false;
-                } else {
-                    if (id === "start_date" || id === "end_date") {
-                        clearError(id);
-                    } else {
-                        el.classList.remove("invalid");
-                    }
-                }
-            });
-
-            // Date validity checks with detailed messages
-            ["start_date", "end_date"].forEach(id => {
-                const val = document.getElementById(id).value;
-                const digits = val.replace(/\D/g, '');
-                if (digits.length > 0) {
-                    const res = validateMMDDYY(digits);
-                    if (!res.ok) {
-                        showError(id, res.message);
-                        valid = false;
-                    }
-                }
-            });
-
-            // Visits per week range check (0–5)
-            const vpwEl = document.getElementById("visits_per_week");
-            if (vpwEl.value) {
-                const n = Number(vpwEl.value);
-                if (isNaN(n) || n < 0 || n > 5) {
-                    vpwEl.classList.add("invalid");
-                    alert("Visits per Week must be between 0 and 5.");
-                    valid = false;
-                }
-            }
-
-            // Ensure start <= end when both valid
-            const startDate = toDate(document.getElementById("start_date").value);
-            const endDate   = toDate(document.getElementById("end_date").value);
-            if (startDate && endDate && endDate < startDate) {
-                showError("end_date", "End Date must be on or after Start Date.");
-                valid = false;
-            }
-
-            return valid;
-        }
-
-        function calculatePOC() {
-            if (!validatePOCInputs()) {
-                alert("Please correct the highlighted fields.");
-                return;
-            }
-
-            const start = document.getElementById("start_date").value;
-            const end = document.getElementById("end_date").value;
-            const visitsPerWeek = parseInt(document.getElementById("visits_per_week").value, 10);
-            const duration = parseInt(document.getElementById("duration").value, 10);
-
-            const startDate = toDate(start);
-            const endDate = toDate(end);
-
-            if (!startDate || !endDate) {
-                alert("Enter valid dates in MMDDYY format.");
-                return;
-            }
-
-            const msPerWeek = 1000 * 60 * 60 * 24 * 7;
-            const weeks = Math.round(Math.abs((endDate - startDate) / msPerWeek));
-            const totalVisits = Math.round(visitsPerWeek * weeks);
-            const totalUnits = Math.round(visitsPerWeek * (duration / 15) * weeks);
-
-            document.getElementById("weeks_result").textContent = `Total weeks: ${weeks}`;
-            document.getElementById("units_result").textContent = `Total units: ${totalUnits}`;
-            document.getElementById("visits_result").textContent = `Total visits: ${totalVisits}`;
-            document.getElementById("poc_results").style.display = "block";
-        }
-
-        function validateUnitsInputs() {
-            let valid = true;
-            const fields = ["units_given", "duration_units"];
-            fields.forEach(id => {
-                const el = document.getElementById(id);
-                if (!el.value) {
-                    el.classList.add("invalid");
-                    valid = false;
-                } else {
-                    el.classList.remove("invalid");
-                }
-            });
-            return valid;
-        }
-
-        function calculateVisits() {
-            if (!validateUnitsInputs()) {
-                alert("Please fill in all fields.");
-                return;
-            }
-
-            const units = parseFloat(document.getElementById("units_given").value);
-            const duration = parseFloat(document.getElementById("duration_units").value);
-            const visits = Math.round(units / (duration / 15));
-
-            document.getElementById("visits_from_units_result").textContent = `Total visits: ${visits}`;
-            document.getElementById("units_results").style.display = "block";
-        }
-
-        // Initialize date masks on load
-        document.addEventListener('DOMContentLoaded', () => {
-            attachDateMask('start_date');
-            attachDateMask('end_date');
-        });
-    </script>
+    // Init
+    document.addEventListener('DOMContentLoaded', () => {
+      attachDateMask('start_date');
+      attachDateMask('end_date');
+    });
+  </script>
 </body>
 </html>
