@@ -17,7 +17,8 @@
     --primary:#4f46e5;
     --primary-600:#4338ca;
     --ring:rgba(79,70,229,.35);
-    --danger:#ef4444;
+    /* milder ring used for focus/animations so the halo is less aggressive */
+    --ring-mild: rgba(79,70,229,.18);
     --shadow-lg:0 12px 24px rgba(2,6,23,.12);
     --radius:14px;
     --radius-sm:10px;
@@ -230,7 +231,8 @@
     inset:0;
     background:var(--primary);
     border-radius:12px;
-    box-shadow:0 10px 18px var(--ring);
+    /* Default shadow is milder so the ring/halo isn't overwhelming */
+    box-shadow:0 8px 14px var(--ring-mild);
     z-index:1;
     pointer-events:none;
     transition: box-shadow .12s ease, transform .06s ease;
@@ -242,6 +244,11 @@
     -webkit-backface-visibility: hidden;
     transform: translateZ(0);
     will-change: transform, box-shadow;
+  }
+
+  /* helper class to trigger the animation via JS on click (works for mouse + keyboard activation) */
+  .btn .btn-surface.swell-anim {
+    animation: swell-mild 260ms cubic-bezier(.2,.9,.3,1);
   }
 
   .btn .btn-label{
@@ -264,56 +271,34 @@
     /* box-shadow moved to the surface so the visible colored surface and the ring align exactly */
   }
 
-  /* Apply the focus halo to the surface instead of the host so the ring hugs the visible surface precisely */
+  /* Apply a milder persistent focus halo to the surface; animation will produce a short swell on top of this.
+     We reduced the ring opacity and spread so the halo feels less aggressive and matches the surface animation. */
   .btn:focus .btn-surface,
   .btn:focus-visible .btn-surface {
-    /* keep the elevation shadow + add an outer ring that matches inputs */
-    box-shadow: 0 10px 18px var(--ring), 0 0 0 4px var(--ring);
+    box-shadow: 0 8px 14px var(--ring-mild), 0 0 0 3px var(--ring-mild);
   }
 
-  /* keyframes for the subtle halo swell (box-shadow on the button surface) */
-  @keyframes halo-swell {
-    0% { box-shadow: 0 10px 18px rgba(79,70,229,0.35), 0 0 0 3px rgba(79,70,229,0.30); }
-    50% { box-shadow: 0 12px 22px rgba(79,70,229,0.22), 0 0 0 6px rgba(79,70,229,0.22); }
-    100% { box-shadow: 0 10px 18px rgba(79,70,229,0.35), 0 0 0 4px rgba(79,70,229,0.35); }
-  }
-  .btn:focus-visible .btn-surface { animation: halo-swell 360ms cubic-bezier(.2,.9,.3,1); }
-
-  /* keyframes for click "pop" that only affects the surface (not the label) */
-  @keyframes surface-pop {
+  /* Unified mild swell animation that animates both scale and the ring (box-shadow) at the same time.
+     This replaces the previous separate animations so focus + active feel coherent and simultaneous. */
+  @keyframes swell-mild {
     0% {
       transform: scale(1);
-      box-shadow: 0 10px 18px var(--ring);
+      box-shadow: 0 8px 14px rgba(79,70,229,.18), 0 0 0 3px rgba(79,70,229,.18);
     }
-    35% {
-      transform: scale(1.04);
-      box-shadow: 0 12px 22px rgba(79,70,229,0.22);
+    50% {
+      transform: scale(1.03);
+      box-shadow: 0 10px 18px rgba(79,70,229,.22), 0 0 0 5px rgba(79,70,229,.20);
     }
     100% {
       transform: scale(1);
-      box-shadow: 0 10px 18px var(--ring);
+      box-shadow: 0 8px 14px rgba(79,70,229,.18), 0 0 0 3px rgba(79,70,229,.18);
     }
   }
 
-  /* Trigger the surface-pop animation on activation (mouse/touch/keyboard activate).
-     We target the surface so the label remains visually static. */
-  .btn:active .btn-surface,
-  .btn[data-activated="true"] .btn-surface {
-    animation: surface-pop 220ms cubic-bezier(.2,.9,.3,1);
-  }
-
-  /* segmented control focus ring (no swell) */
-  .segmented button:focus,
-  .segmented button:focus-visible {
-    outline: none;
-    box-shadow: 0 0 0 4px rgba(79,70,229,.12);
-    border-radius: 999px;
-  }
-
-  /* Respect users who prefer reduced motion */
+  /* Keep reduced-motion support */
   @media (prefers-reduced-motion: reduce) {
+    .btn .btn-surface.swell-anim { animation: none !important; transition: box-shadow .12s ease; }
     .btn:focus-visible .btn-surface { animation: none !important; transition: box-shadow .12s ease; }
-    .btn:active .btn-surface { animation: none !important; transform: none !important; }
     .segmented button:focus-visible { box-shadow: 0 0 0 4px rgba(79,70,229,.12); }
   }
 
@@ -464,6 +449,7 @@
   /* ==================================
      Logic & Validation (MMDDYY)
      + Sliding segmented control position logic
+     + click handler to reliably trigger swell animation (mouse + keyboard)
      ================================== */
 
   function monthName(m){
@@ -713,20 +699,11 @@
   }
 
   /* 
-    Ensure keyboard activation also triggers the surface animation —
-    some browsers don't apply :active for keyboard activations.
+    Ensure keyboard activation also triggers the surface animation.
+    Using click handler to add/remove an animation class is reliable because:
+    - click fires for mouse clicks and for keyboard activation (Enter/Space) on buttons
+    - repeatedly removing and re-adding the class retriggers the animation
   */
-  document.addEventListener('keydown', (e) => {
-    const target = e.target;
-    if (!(target instanceof HTMLElement)) return;
-    if (target.classList && target.classList.contains('btn')) {
-      if (e.key === 'Enter' || e.key === ' ') {
-        target.setAttribute('data-activated', 'true');
-        setTimeout(() => target.removeAttribute('data-activated'), 300);
-      }
-    }
-  });
-
   document.addEventListener('DOMContentLoaded', () => {
     // date masks
     attachDateMask('start_date');
@@ -755,6 +732,46 @@
         e.preventDefault();
       }
     });
+
+    // Add reliable click-driven animation trigger for every .btn
+    const buttons = Array.from(document.querySelectorAll('.btn'));
+    buttons.forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        // don't trigger for disabled
+        if (btn.disabled) return;
+        const surface = btn.querySelector('.btn-surface');
+        if (!surface) return;
+
+        // remove class if present so we can retrigger the animation
+        surface.classList.remove('swell-anim');
+
+        // Force reflow so removal takes effect (ensures animation restarts)
+        // eslint-disable-next-line no-unused-expressions
+        void surface.offsetWidth;
+
+        surface.classList.add('swell-anim');
+
+        // remove it after animation finishes so next click re-triggers cleanly
+        // match to animation duration + small buffer (260ms animation -> 320ms timeout)
+        setTimeout(() => surface.classList.remove('swell-anim'), 360);
+      });
+    });
+  });
+
+  /* 
+    Legacy keyboard handler kept for compatibility but not required by the click approach.
+    (It can be removed if you prefer a single mechanism.)
+  */
+  document.addEventListener('keydown', (e) => {
+    const target = e.target;
+    if (!(target instanceof HTMLElement)) return;
+    if (target.classList && target.classList.contains('btn')) {
+      if (e.key === 'Enter' || e.key === ' ') {
+        // older approach: add data attribute (no longer needed because click handler triggers animation)
+        target.setAttribute('data-activated', 'true');
+        setTimeout(() => target.removeAttribute('data-activated'), 300);
+      }
+    }
   });
 </script>
 </body>
