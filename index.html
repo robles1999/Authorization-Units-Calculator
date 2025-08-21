@@ -200,21 +200,118 @@
   .actions{display:flex;gap:12px;justify-content:center}
   .actions .btn{ margin: 40px 0; }
 
+  /*
+    Button structure: .btn is interactive, .btn-surface is the visual surface, .btn-label is the text.
+    Surface will animate independently so the label remains stable and corners render clean.
+  */
   .btn{
     appearance:none;
     border:0;
     cursor:pointer;
-    background:var(--primary);
+    background:transparent; /* surface moved to .btn-surface */
     color:white;
     font-weight:700;
     letter-spacing:.2px;
     padding:12px 16px;
     border-radius:12px;
-    box-shadow:0 10px 18px var(--ring);
-    transition:transform .04s ease, box-shadow .12s ease;
+    transition:box-shadow .12s ease, border-color .12s ease;
+    position:relative;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    overflow:visible;
+    will-change: box-shadow;
+    line-height:1;
   }
-  .btn:active{ transform: translateY(1px); box-shadow: 0 6px 12px var(--ring); }
+
+  /* visual surface (background + elevation). pointer-events:none so clicks hit the button */
+  .btn .btn-surface{
+    position:absolute;
+    inset:0;
+    background:var(--primary);
+    border-radius:12px;
+    box-shadow:0 10px 18px var(--ring);
+    z-index:1;
+    pointer-events:none;
+    transition: box-shadow .12s ease, transform .06s ease;
+    transform-origin:center;
+
+    /* Rendering tweaks to avoid corner aliasing/shine */
+    background-clip: padding-box;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    transform: translateZ(0);
+    will-change: transform, box-shadow;
+  }
+
+  .btn .btn-label{
+    position:relative;
+    z-index:2; /* above surface */
+    color:white;
+    display:inline-block;
+    padding:0 4px;
+    user-select:none;
+    -webkit-font-smoothing:antialiased;
+  }
+
   .btn[disabled]{ opacity:.6; cursor:not-allowed; box-shadow:none; }
+
+  /* Keep the keyboard focus halo on the button (ring). Remove border to avoid corner highlight artifacts. */
+  .btn:focus,
+  .btn:focus-visible {
+    outline: none;
+    border-radius: 12px;
+    /* removed border to prevent thin corner highlight (the 'shine') */
+    /* border: 1px solid var(--primary-600); */ 
+    /* ring applied via box-shadow only */
+    box-shadow: 0 0 0 4px var(--ring);
+  }
+
+  /* keyframes for the subtle halo swell (box-shadow on the button) */
+  @keyframes halo-swell {
+    0% { box-shadow: 0 0 0 3px rgba(79,70,229,0.30); }
+    50% { box-shadow: 0 0 0 6px rgba(79,70,229,0.22); }
+    100% { box-shadow: 0 0 0 4px rgba(79,70,229,0.35); }
+  }
+  .btn:focus-visible { animation: halo-swell 360ms cubic-bezier(.2,.9,.3,1); }
+
+  /* keyframes for click "pop" that only affects the surface (not the label) */
+  @keyframes surface-pop {
+    0% {
+      transform: scale(1);
+      box-shadow: 0 10px 18px var(--ring);
+    }
+    35% {
+      transform: scale(1.04);
+      box-shadow: 0 12px 22px rgba(79,70,229,0.22);
+    }
+    100% {
+      transform: scale(1);
+      box-shadow: 0 10px 18px var(--ring);
+    }
+  }
+
+  /* Trigger the surface-pop animation on activation (mouse/touch/keyboard activate).
+     We target the surface so the label remains visually static. */
+  .btn:active .btn-surface,
+  .btn[data-activated="true"] .btn-surface {
+    animation: surface-pop 220ms cubic-bezier(.2,.9,.3,1);
+  }
+
+  /* segmented control focus ring (no swell) */
+  .segmented button:focus,
+  .segmented button:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 4px rgba(79,70,229,.12);
+    border-radius: 999px;
+  }
+
+  /* Respect users who prefer reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    .btn:focus-visible { animation: none !important; transition: box-shadow .12s ease; }
+    .btn:active .btn-surface { animation: none !important; transform: none !important; }
+    .segmented button:focus-visible { box-shadow: 0 0 0 4px rgba(79,70,229,.12); }
+  }
 
   .results{display:none;border-top:1px dashed rgba(2,6,23,.06);padding-top:10px;animation:fade .25s ease both}
   @keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
@@ -302,7 +399,11 @@
           </div>
 
           <div class="actions">
-            <button class="btn" onclick="calculatePOC()">Calculate</button>
+            <!-- Button updated: surface + label so label doesn't scale on click -->
+            <button class="btn" onclick="calculatePOC()" id="calculate_poc_btn" aria-label="Calculate POC">
+              <span class="btn-surface" aria-hidden="true"></span>
+              <span class="btn-label">Calculate</span>
+            </button>
           </div>
 
           <div class="results" id="poc_results">
@@ -333,7 +434,11 @@
           </div>
 
           <div class="actions">
-            <button class="btn" onclick="calculateVisits()">Calculate</button>
+            <!-- Button updated here too -->
+            <button class="btn" onclick="calculateVisits()" id="calculate_units_btn" aria-label="Calculate Visits">
+              <span class="btn-surface" aria-hidden="true"></span>
+              <span class="btn-label">Calculate</span>
+            </button>
           </div>
 
           <div class="results" id="units_results">
@@ -602,6 +707,21 @@
     document.getElementById('visits_from_units_result').textContent = visits;
     document.getElementById('units_results').style.display = 'block';
   }
+
+  /* 
+    Ensure keyboard activation also triggers the surface animation —
+    some browsers don't apply :active for keyboard activations.
+  */
+  document.addEventListener('keydown', (e) => {
+    const target = e.target;
+    if (!(target instanceof HTMLElement)) return;
+    if (target.classList && target.classList.contains('btn')) {
+      if (e.key === 'Enter' || e.key === ' ') {
+        target.setAttribute('data-activated', 'true');
+        setTimeout(() => target.removeAttribute('data-activated'), 300);
+      }
+    }
+  });
 
   document.addEventListener('DOMContentLoaded', () => {
     // date masks
