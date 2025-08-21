@@ -18,7 +18,7 @@
     --primary-600:#4338ca;
     --ring:rgba(79,70,229,.35);
     /* milder ring used for focus/animations so the halo is less aggressive */
-    --ring-mild: rgba(79,70,229,.18);
+    --ring-mild: rgba(79,70,229,.35);
     --shadow-lg:0 12px 24px rgba(2,6,23,.12);
     --radius:14px;
     --radius-sm:10px;
@@ -277,6 +277,7 @@
   .btn:focus-visible .btn-surface {
     box-shadow: 0 8px 14px var(--ring-mild), 0 0 0 3px var(--ring-mild);
   }
+
 
   /* Unified mild swell animation that animates both scale and the ring (box-shadow) at the same time.
      This replaces the previous separate animations so focus + active feel coherent and simultaneous. */
