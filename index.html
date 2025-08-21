@@ -46,6 +46,8 @@
 
   .wrap{max-width:880px;margin:48px auto;padding:0 20px}
   .card{
+    /* subtle top accent to separate header gradient from background (kept for subtle framing) */
+    border-top: 4px solid rgba(79,70,229,0.06);
     background:linear-gradient(180deg, rgba(2,6,23,.02), rgba(255,255,255,0.02)) , var(--card);
     border:1px solid rgba(2,6,23,.04);
     border-radius:var(--radius);
@@ -64,7 +66,26 @@
         rgba(255,255,255,0.00) 55%,
         rgba(16,185,129,0.12) 100%);
     border-bottom:1px solid rgba(2,6,23,.06);
+    /* ensure pseudo-element is visible over the header background */
+    overflow:visible;
   }
+
+  /* thin, slightly translucent blue top stripe to emphasize the header top edge
+     matches the button color (var(--primary) -> var(--primary-600)) */
+  .app-header::before{
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 8px; /* stripe height, adjust as needed (e.g. 6px or 10px) */
+    background: linear-gradient(90deg, rgba(79,70,229,0.98), rgba(67,56,202,0.95));
+    border-top-left-radius: var(--radius);
+    border-top-right-radius: var(--radius);
+    z-index: 2;
+    pointer-events:none;
+  }
+
   .app-title{display:flex;align-items:center;gap:12px;font-weight:700;font-size:22px;letter-spacing:.2px;position:relative;z-index:2}
   .app-sub{color:var(--muted);margin-top:6px;font-size:14px;position:relative;z-index:2}
 
@@ -179,7 +200,21 @@
   .actions{display:flex;gap:12px;justify-content:center}
   .actions .btn{ margin: 40px 0; }
 
-  .btn{appearance:none;border:0;cursor:pointer;background:var(--primary);color:white;font-weight:700;letter-spacing:.2px;padding:12px 16px;border-radius:12px;box-shadow:0 10px 18px var(--ring);transition:transform .07s ease,filter .2s ease,box-shadow .2s ease}
+  .btn{
+    appearance:none;
+    border:0;
+    cursor:pointer;
+    background:var(--primary);
+    color:white;
+    font-weight:700;
+    letter-spacing:.2px;
+    padding:12px 16px;
+    border-radius:12px;
+    box-shadow:0 10px 18px var(--ring);
+    transition:transform .04s ease, box-shadow .12s ease;
+  }
+  .btn:active{ transform: translateY(1px); box-shadow: 0 6px 12px var(--ring); }
+  .btn[disabled]{ opacity:.6; cursor:not-allowed; box-shadow:none; }
 
   .results{display:none;border-top:1px dashed rgba(2,6,23,.06);padding-top:10px;animation:fade .25s ease both}
   @keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
@@ -190,7 +225,18 @@
   .stat .label{color:var(--muted);font-size:12px;font-weight:600}
   .stat .value{font-size:22px;font-weight:800;letter-spacing:.2px}
 
-  footer{position:fixed;bottom:0;left:0;right:0;padding:10px 16px;text-align:center;font-size:13px;color:var(--muted);background:linear-gradient(180deg, rgba(255,255,255,.02), rgba(2,6,23,.02));border-top:1px solid rgba(2,6,23,.04);backdrop-filter:blur(6px)}
+  footer{
+    position:fixed;
+    bottom:0;
+    left:0;
+    right:0;
+    padding:10px 16px;
+    text-align:center;
+    font-size:13px;
+    color:var(--muted);
+    background:linear-gradient(180deg, rgba(255,255,255,.02), rgba(2,6,23,.02));
+    border-top:1px solid rgba(2,6,23,.04);
+  }
   .hidden{display:none!important}
 </style>
 </head>
@@ -379,17 +425,44 @@
   function attachDateMask(inputId){
     const input = document.getElementById(inputId);
     if (!input) return;
-    input.addEventListener('input', () => {
-      const digits = input.value.replace(/\D/g, '').slice(0, 6);
-      input.value = formatWithSlashes(digits);
+
+    // compute caret position from how many numeric digits are before caret
+    function computeCaretFromDigitsCount(digitsBefore, digitsLength){
+      const d = Math.min(digitsBefore, digitsLength);
+      const slashes = (d > 2 ? 1 : 0) + (d > 4 ? 1 : 0);
+      return d + slashes;
+    }
+
+    input.addEventListener('input', (e) => {
+      const raw = input.value || '';
+      // current caret index (in the raw value including slashes)
+      const selStart = (typeof input.selectionStart === 'number') ? input.selectionStart : raw.length;
+      // how many numeric digits are before the caret
+      const digitsBefore = raw.slice(0, selStart).replace(/\D/g, '').length;
+      // keep only digits (max 6)
+      const digits = raw.replace(/\D/g, '').slice(0, 6);
+      const formatted = formatWithSlashes(digits);
+      input.value = formatted;
+
+      // compute new caret position accounting for inserted slashes
+      const newPos = computeCaretFromDigitsCount(digitsBefore, digits.length);
+      try {
+        input.setSelectionRange(newPos, newPos);
+      } catch (err) {
+        // ignore selection errors in some browsers
+      }
+
       clearError(inputId);
     });
+
     input.addEventListener('blur', () => {
       const digits = input.value.replace(/\D/g, '');
       if (digits.length === 0) { clearError(inputId); return; }
       const res = validateMMDDYY(digits);
-      if (!res.ok) showError(inputId, res.message); else { input.value = formatWithSlashes(digits); clearError(inputId); }
+      if (!res.ok) showError(inputId, res.message);
+      else { input.value = formatWithSlashes(digits); clearError(inputId); }
     });
+
     input.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') {
         if (!document.getElementById('poc_mode').classList.contains('hidden')) calculatePOC();
@@ -475,9 +548,23 @@
       }
     }
 
-    const sDate = toDate(document.getElementById('start_date').value);
-    const eDate = toDate(document.getElementById('end_date').value);
-    if (sDate && eDate && eDate < sDate) { showError('end_date', 'End Date must be on or after Start Date.'); valid = false; }
+    // Robust comparison: parse both MMDDYY and compare YYYYMMDD numerically
+    const startDigits = document.getElementById('start_date').value.replace(/\D/g, '');
+    const endDigits = document.getElementById('end_date').value.replace(/\D/g, '');
+    const sP = parseMMDDYY(startDigits);
+    const eP = parseMMDDYY(endDigits);
+    if (sP && eP) {
+      const sVal = sP.fullYear * 10000 + sP.m * 100 + sP.d;
+      const eVal = eP.fullYear * 10000 + eP.m * 100 + eP.d;
+      // Require end to be strictly greater than start (at least one day after)
+      if (eVal <= sVal) {
+        showError('end_date', 'End Date must be at least one day after Start Date.');
+        valid = false;
+      } else {
+        // ensure any previous end_date error is cleared
+        clearError('end_date');
+      }
+    }
 
     return valid;
   }
