@@ -261,19 +261,23 @@
   .btn:focus-visible {
     outline: none;
     border-radius: 12px;
-    /* removed border to prevent thin corner highlight (the 'shine') */
-    /* border: 1px solid var(--primary-600); */ 
-    /* ring applied via box-shadow only */
-    box-shadow: 0 0 0 4px var(--ring);
+    /* box-shadow moved to the surface so the visible colored surface and the ring align exactly */
   }
 
-  /* keyframes for the subtle halo swell (box-shadow on the button) */
-  @keyframes halo-swell {
-    0% { box-shadow: 0 0 0 3px rgba(79,70,229,0.30); }
-    50% { box-shadow: 0 0 0 6px rgba(79,70,229,0.22); }
-    100% { box-shadow: 0 0 0 4px rgba(79,70,229,0.35); }
+  /* Apply the focus halo to the surface instead of the host so the ring hugs the visible surface precisely */
+  .btn:focus .btn-surface,
+  .btn:focus-visible .btn-surface {
+    /* keep the elevation shadow + add an outer ring that matches inputs */
+    box-shadow: 0 10px 18px var(--ring), 0 0 0 4px var(--ring);
   }
-  .btn:focus-visible { animation: halo-swell 360ms cubic-bezier(.2,.9,.3,1); }
+
+  /* keyframes for the subtle halo swell (box-shadow on the button surface) */
+  @keyframes halo-swell {
+    0% { box-shadow: 0 10px 18px rgba(79,70,229,0.35), 0 0 0 3px rgba(79,70,229,0.30); }
+    50% { box-shadow: 0 12px 22px rgba(79,70,229,0.22), 0 0 0 6px rgba(79,70,229,0.22); }
+    100% { box-shadow: 0 10px 18px rgba(79,70,229,0.35), 0 0 0 4px rgba(79,70,229,0.35); }
+  }
+  .btn:focus-visible .btn-surface { animation: halo-swell 360ms cubic-bezier(.2,.9,.3,1); }
 
   /* keyframes for click "pop" that only affects the surface (not the label) */
   @keyframes surface-pop {
@@ -308,7 +312,7 @@
 
   /* Respect users who prefer reduced motion */
   @media (prefers-reduced-motion: reduce) {
-    .btn:focus-visible { animation: none !important; transition: box-shadow .12s ease; }
+    .btn:focus-visible .btn-surface { animation: none !important; transition: box-shadow .12s ease; }
     .btn:active .btn-surface { animation: none !important; transform: none !important; }
     .segmented button:focus-visible { box-shadow: 0 0 0 4px rgba(79,70,229,.12); }
   }
